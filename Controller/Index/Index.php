@@ -33,6 +33,11 @@ class Index extends Action implements HttpGetActionInterface
 
         /** @var Page $resultPage */
         $resultPage = $this->pageFactory->create();
+
+        if (array_key_exists('magento_layout', $story['content'])) {
+            $resultPage->addHandle($story['content']['magento_layout']);
+        }
+        
         $resultPage = $this->setMetaFields($resultPage, $story);
 
         $resultPage
