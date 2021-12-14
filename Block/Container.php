@@ -43,7 +43,7 @@ class Container extends \Magento\Framework\View\Element\Template implements Iden
         ]);
     }
 
-    public function getCacheLifetime(): int
+    public function getCacheLifetime()
     {
         return parent::getCacheLifetime() ?: 3600;
     }
@@ -85,16 +85,6 @@ class Container extends \Magento\Framework\View\Element\Template implements Iden
             }
         }
 
-        $story = $this->getData('story');
-        $slug = $story['full_slug'];
-        if ($story['is_startpage'] === true) {
-            $childStories = $this->getChildStories($slug);
-            if (!empty($childStories) && !empty($childStories['stories'])) {
-                $story['child_stories'] = $childStories['stories'];
-                $this->setData('story', $story);
-            }
-        }
-
         return $this->getData('story');
     }
 
@@ -106,23 +96,23 @@ class Container extends \Magento\Framework\View\Element\Template implements Iden
     private function createBlockFromData(array $blockData): Element
     {
         $block = $this->getLayout()
-        ->createBlock(
-            Element::class,
-            $this->getNameInLayout() ? ($this->getNameInLayout() . '_' . $blockData['_uid']) : $blockData['_uid']
-        )
-        ->setData($blockData);
+            ->createBlock(
+                Element::class,
+                $this->getNameInLayout()
+                    ? $this->getNameInLayout() . '_' . $blockData['_uid']
+                    : $blockData['_uid']
+            )
+            ->setData($blockData);
 
-        $templateFile = $this->getIsListItem()
-            ? "MediaLounge_Storyblok::story/{$blockData['component']}-list-item.phtml"
-            : "MediaLounge_Storyblok::story/{$blockData['component']}.phtml";
-
-        $templatePath = $this->viewFileSystem->getTemplateFileName($templateFile);
+        $templatePath = $this->viewFileSystem->getTemplateFileName(
+            "MediaLounge_Storyblok::story/{$blockData['component']}.phtml"
+        );
 
         if ($templatePath) {
-            $block->setTemplate($templateFile);
+            $block->setTemplate("MediaLounge_Storyblok::story/{$blockData['component']}.phtml");
         } else {
             $block->setTemplate('MediaLounge_Storyblok::story/debug.phtml')->addData([
-                'original_template' => $templateFile
+                'original_template' => "MediaLounge_Storyblok::story/{$blockData['component']}.phtml"
             ]);
         }
 
@@ -157,29 +147,9 @@ class Container extends \Magento\Framework\View\Element\Template implements Iden
             $blockData = $storyData['content'] ?? [];
             $parentBlock = $this->createBlockFromData($blockData);
 
-            if (!empty($storyData['child_stories'])) {
-                $block = $this->getLayout()
-                    ->createBlock('\MediaLounge\Storyblok\Block\Listing', $storyData['content']['component'])
-                    ->setTemplate("MediaLounge_Storyblok::story/{$storyData['content']['component']}.phtml")
-                    ->setData('stories', $storyData['child_stories']);
-                $parentBlock->append($block);
-            }
             return $parentBlock->toHtml();
         }
-        return '';
-    }
 
-    /**
-     * @param string $slug
-     * @return array
-     */
-    private function getChildStories($slug): array
-    {
-        $storyblokClient = $this->storyblokClient->getStories([
-            'starts_with' => $slug,
-            'is_startpage' => 0
-        ]);
-        $childStories = $storyblokClient->getBody();
-        return $childStories;
+        return '';
     }
 }
